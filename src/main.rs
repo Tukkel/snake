@@ -11,12 +11,30 @@ use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::window::WindowSettings;
 use rand::{thread_rng, Rng};
 
+pub fn gen_apple(snake: &Vec<u16>, size: u16) -> usize {
+    let mut rng = thread_rng();
+    let mut apple_gen: u16 = rng.gen_range(0..(900-size));
+
+    for i in 0..900 {
+        if snake[i] == 0 {
+            if apple_gen == 0 {
+                return i;
+            }
+            else {
+                apple_gen -= 1;
+            }
+        }
+    }
+    return 0;
+}
+
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     snake: Vec<u16>,  //Snake position
     time: f64,
     size: u16,
     path: Vec<u16>,
+    apple: usize,
 }
 
 impl App {
@@ -29,14 +47,15 @@ impl App {
 
         let square = rectangle::square(0.0, 0.0, 25.0);
         let (x, y) = (args.window_size[0] / 2.0, args.window_size[1] / 2.0);
-        let snake_1d = &self.snake;
+        let snake = &self.snake;
+        let apple = self.apple;
 
         self.gl.draw(args.viewport(), |c, gl| {
             // Clear the screen.
             clear(BLACK, gl);
 
             for i in 0..900 {
-                if snake_1d[i] != 0
+                if snake[i] != 0
                 {
                     let transform = c
                     .transform
@@ -45,12 +64,16 @@ impl App {
                     .trans((((i%30) as usize)*30) as f64,(((i/30) as usize)*30) as f64);
 
                     // Draw a box
-                    if snake_1d[i] == 9999 {
-                        rectangle(RED, square, transform, gl);
-                    }
-                    else {
-                        rectangle(GREEN, square, transform, gl);
-                    }
+                    rectangle(GREEN, square, transform, gl);
+                }
+                else if i == apple {
+                    let transform = c
+                    .transform
+                    .trans(x, y)
+                    .trans(-447.5, -447.5)
+                    .trans((((i%30) as usize)*30) as f64,(((i/30) as usize)*30) as f64);
+
+                    rectangle(RED, square, transform, gl);
                 }
             }
             
@@ -62,27 +85,15 @@ impl App {
         if self.time > 0.001 {
             self.time -= 0.001;
             self.path[900] = self.path[0];
-            if self.snake[self.path[0] as usize] == 9999 {
+            if self.path[0] as usize == self.apple {
                 self.size += 1;
-                //Generate new apple location
-                let mut rng = thread_rng();
-                let mut apple_gen: u16 = rng.gen_range(0..(900-self.size));
 
-                for i in 0..900 {
-                    if self.snake[i] == 0 {
-                        if apple_gen == 0 {
-                            self.snake[i] = 9999;
-                            break;
-                        }
-                        else {
-                            apple_gen -= 1;
-                        }
-                    }
-                }
+                //Generate new apple location
+                self.apple = gen_apple(&self.snake, self.size);
             }
             else {
                 for i in 0..900 {
-                    if self.snake[i] > 0 && self.snake[i] < 9999 {
+                    if self.snake[i] > 0 {
                         self.snake[i] -= 1;
                     }
                 }
@@ -106,10 +117,6 @@ fn main() {
         .build()
         .unwrap();
 
-    //Gen first apple
-    let mut rng = thread_rng();
-    let mut apple_gen: u16 = rng.gen_range(0..(900-3));
-
     // Create vector of snake position
     let mut snake_1d = vec![0; 900];
 
@@ -117,17 +124,8 @@ fn main() {
     snake_1d[495] = 2;
     snake_1d[525] = 1;
 
-    for i in 0..900 {
-        if snake_1d[i] == 0 {
-            if apple_gen == 0 {
-                snake_1d[i] = 9999;
-                break;
-            }
-            else {
-                apple_gen -= 1;
-            }
-        }
-    }
+    //Gen first apple
+    let apple = gen_apple(&snake_1d, 3);
 
     // Create vector of snake path
     let mut snake_path = vec![0; 901];
@@ -199,6 +197,7 @@ fn main() {
         time: 0.0,
         size: 3,
         path: snake_path,
+        apple: apple,
     };
 
     let mut events = Events::new(EventSettings::new());
