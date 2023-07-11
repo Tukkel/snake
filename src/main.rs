@@ -28,6 +28,10 @@ pub fn gen_apple(snake: &Vec<u16>, size: u16) -> usize {
     return 0;
 }
 
+pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>) {
+    
+}
+
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     snake: Vec<u16>,  //Snake position
