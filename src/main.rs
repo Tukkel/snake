@@ -28,7 +28,112 @@ pub fn gen_apple(snake: &Vec<u16>, size: u16) -> usize {
     return 0;
 }
 
-pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
+pub fn exit(snake: &Vec<u16>, path: &Vec<u16>, apple: usize, size: u16) -> bool {
+    let mut exit: u16 = size+1;
+    let mut room: u16 = 0;
+    let mut max_index: usize = 0;
+    for i in 0..900 {
+        if path[i] == (apple as u16) {
+            max_index = i;
+            break;
+        }
+    }
+    let mut open: Vec<u16> = Vec::new();
+    let mut closed: Vec<u16> = Vec::new();
+    let mut current: u16;
+    let mut available: bool;
+
+    open.push(apple as u16);
+
+    while open.is_empty() == false && exit > room {
+        current = open[0];
+        closed.push(open.remove(0));
+
+        available = true;
+
+        for i in 0..(max_index-1) {
+            if path[i] == current {
+                available = false;
+                break;
+            }
+        }
+
+        if available && snake[current as usize] != 0 {
+            available = false;
+            if (max_index as u16) > (snake[current as usize]+10) {
+                return true;
+            }
+            else if (snake[current as usize]+10-(max_index as u16)) < exit {
+                exit = snake[current as usize]+10-(max_index as u16);
+            }
+        }
+
+        if available {
+            room += 1;
+            if current < 870 {
+                for i in 0..closed.len() {
+                    if closed[i] == (current + 30) {
+                        available = false;
+                        break;
+                    }
+                }
+                if available {
+                    open.push(current+30);
+                } else {
+                    available = true;
+                }
+            }
+            if current > 29 {
+                for i in 0..closed.len() {
+                    if closed[i] == (current-30) {
+                        available = false;
+                        break;
+                    }
+                }
+                if available {
+                    open.push(current-30);
+                } else {
+                    available = true;
+                }
+            }
+            if current%30 != 29 {
+                for i in 0..closed.len() {
+                    if closed[i] == (current+1) {
+                        available = false;
+                        break;
+                    }
+                }
+                if available {
+                    open.push(current+1);
+                } else {
+                    available = true;
+                }
+            }
+            if current%30 != 0 {
+                for i in 0..closed.len() {
+                    if closed[i] == (current-1) {
+                        available = false;
+                        break;
+                    }
+                }
+                if available {
+                    open.push(current-1);
+                }
+            }
+        }
+    }
+
+    println!("{}, {}", exit, room);
+
+    if exit > room {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) -> bool {
     let mut open: Vec<u16> = Vec::new();
     let mut open_f: Vec<u16> = Vec::new();
     let mut open_g: Vec<u16> = Vec::new();
@@ -36,10 +141,16 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
     let mut closed: Vec<u16> = Vec::new();
     let mut closed_g: Vec<u16> = Vec::new();
     let mut closed_parent: Vec<u16> = Vec::new();
-    let mut current: usize;
+    let mut current: usize = 0;
     let mut target: u16;
+    let mut best_exit: u16 = path[898];
 
-    open.push(path[898]);
+    for i in 1..snake.len() {
+        if snake[i] > snake[current] {
+            current = i;
+        }
+    }
+    open.push(current as u16);
     open_f.push(0);
     open_g.push(0);
     open_parent.push(999);
@@ -52,10 +163,10 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
             }
         }
 
-        closed.push(open.swap_remove(current));
+        closed.push(open.remove(current));
         open_f.remove(current);
-        closed_g.push(open_g.swap_remove(current));
-        closed_parent.push(open_parent.swap_remove(current));
+        closed_g.push(open_g.remove(current));
+        closed_parent.push(open_parent.remove(current));
 
         current = closed.len()-1;
 
@@ -71,6 +182,9 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
             }
             if set && snake[target as usize] > (closed_g[current] + 1) {
                 set = false;
+                if snake[target as usize] < snake[best_exit as usize] {
+                    best_exit = target;
+                }
             }
             if set && open.contains(&target) {
                 for i in 0..open.len() {
@@ -78,6 +192,7 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                         if open_g[i] < (closed_g[current])+2 {
                             set = false;
                         }
+                        break;
                     }
                 }
             }
@@ -89,7 +204,7 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                     open_f.push(closed_g[current]+1+target-(apple as u16));
                 }
                 open_g.push(closed_g[current] + 1);
-                open_parent.push(current as u16);
+                open_parent.push(closed[current]);
             }
         }
         if closed[current] > 29 {
@@ -100,6 +215,9 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
             }
             if set && snake[target as usize] > (closed_g[current] + 1) {
                 set = false;
+                if snake[target as usize] < snake[best_exit as usize] {
+                    best_exit = target;
+                }
             }
             if set && open.contains(&target) {
                 for i in 0..open.len() {
@@ -107,6 +225,7 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                         if open_g[i] < (closed_g[current])+2 {
                             set = false;
                         }
+                        break;
                     }
                 }
             }
@@ -118,7 +237,7 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                     open_f.push(closed_g[current]+1+target-(apple as u16));
                 }
                 open_g.push(closed_g[current] + 1);
-                open_parent.push(current as u16);
+                open_parent.push(closed[current]);
             }
         }
         if closed[current]%30 != 29 {
@@ -129,6 +248,9 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
             }
             if set && snake[target as usize] > (closed_g[current] + 1) {
                 set = false;
+                if snake[target as usize] < snake[best_exit as usize] {
+                    best_exit = target;
+                }
             }
             if set && open.contains(&target) {
                 for i in 0..open.len() {
@@ -136,6 +258,7 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                         if open_g[i] < (closed_g[current])+2 {
                             set = false;
                         }
+                        break;
                     }
                 }
             }
@@ -147,7 +270,7 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                     open_f.push(closed_g[current]+1+target-(apple as u16));
                 }
                 open_g.push(closed_g[current] + 1);
-                open_parent.push(current as u16);
+                open_parent.push(closed[current]);
             }
         }
         if closed[current]%30 != 0 {
@@ -158,6 +281,9 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
             }
             if set && snake[target as usize] > (closed_g[current] + 1) {
                 set = false;
+                if snake[target as usize] < snake[best_exit as usize] {
+                    best_exit = target;
+                }
             }
             if set && open.contains(&target) {
                 for i in 0..open.len() {
@@ -165,6 +291,7 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                         if open_g[i] < (closed_g[current])+2 {
                             set = false;
                         }
+                        break;
                     }
                 }
             }
@@ -176,19 +303,60 @@ pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
                     open_f.push(closed_g[current]+1+target-(apple as u16));
                 }
                 open_g.push(closed_g[current] + 1);
-                open_parent.push(current as u16);
+                open_parent.push(closed[current]);
             }
         }
+    }
 
-        while current != 999 {
+    if open.is_empty() {
+        for i in 0..closed.len() {
+            if closed[i] == best_exit {
+                current = i;
+                break;
+            }
+        }
+        loop {
             for i in 0..900 {
-                path[i+1] = path[i];
+                path[900-i] = path[899-i];
             }
             path[0] = closed[current];
+            target = closed_parent[current];
+            if target == 999 {
+                break;
+            }
+            for i in 0..closed.len() {
+                if closed[i] == target {
+                    current = i;
+                    break;
+                }
+            }
         }
-        
 
+        return false;
     }
+
+    loop {
+        for i in 0..900 {
+            path[900-i] = path[899-i];
+        }
+        path[0] = closed[current];
+        target = closed_parent[current];
+        if target == 999 {
+            break;
+        }
+        for i in 0..closed.len() {
+            if closed[i] == target {
+                current = i;
+                break;
+            }
+        }
+    }
+
+    return true;
+}
+
+pub fn bstar(snake: &Vec<u16>, path: &mut Vec<u16>) {
+    
 }
 
 pub struct App {
@@ -208,7 +376,7 @@ impl App {
         const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
         const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 
-        let square = rectangle::square(0.0, 0.0, 25.0);
+        let square = rectangle::square(0.0, 0.0, 20.0);
         let (x, y) = (args.window_size[0] / 2.0, args.window_size[1] / 2.0);
         let snake = &self.snake;
         let apple = self.apple;
@@ -223,36 +391,65 @@ impl App {
                     let transform = c
                     .transform
                     .trans(x, y)
-                    .trans(-447.5, -447.5)
+                    .trans(-445.0, -445.0)
                     .trans((((i%30) as usize)*30) as f64,(((i/30) as usize)*30) as f64);
 
                     // Draw a box
                     rectangle(GREEN, square, transform, gl);
+
+                    if i < 870 {
+                        if snake[i]+1 == snake[i+30] {
+                            rectangle(GREEN, square, transform.trans(0.0,15.0), gl);
+                        }
+                    }
+                    if i > 29 {
+                        if snake[i]+1 == snake[i-30] {
+                            rectangle(GREEN, square, transform.trans(0.0,-15.0), gl);
+                        }
+                    }
+                    if i%30 != 29 {
+                        if snake[i]+1 == snake[i+1] {
+                            rectangle(GREEN, square, transform.trans(15.0,0.0), gl);
+                        }
+                    }
+                    if i%30 != 0 {
+                        if snake[i]+1 == snake[i-1] {
+                            rectangle(GREEN, square, transform.trans(-15.0,0.0), gl);
+                        }
+                    }
                 }
                 else if i == apple {
                     let transform = c
                     .transform
                     .trans(x, y)
-                    .trans(-447.5, -447.5)
+                    .trans(-445.0, -445.0)
                     .trans((((i%30) as usize)*30) as f64,(((i/30) as usize)*30) as f64);
 
                     rectangle(RED, square, transform, gl);
                 }
             }
-            
         });
     }
 
     fn update(&mut self, args: &UpdateArgs) {
         self.time += args.dt;
-        if self.time > 0.001 {
-            self.time -= 0.001;
+        if self.time > 0.05 {
+            self.time -= 0.05;
             self.path[900] = self.path[0];
             if self.path[0] as usize == self.apple {
                 self.size += 1;
 
+                self.snake[self.path[0] as usize] = self.size;
+
                 //Generate new apple location
                 self.apple = gen_apple(&self.snake, self.size);
+
+                //Generate A* path
+                let a_gen = astar(&self.snake, &mut self.path, self.apple);
+
+                if a_gen {
+                    println!("{}", exit(&self.snake, &self.path, self.apple, self.size));
+                }
             }
             else {
                 for i in 0..900 {
@@ -260,8 +457,9 @@ impl App {
                         self.snake[i] -= 1;
                     }
                 }
+                self.snake[self.path[0] as usize] = self.size;
             }
-            self.snake[self.path[0] as usize] = self.size;
+            
             for i in 0..900 {
                 self.path[i] = self.path[i+1];
             }
@@ -349,9 +547,14 @@ fn main() {
                 }
             }
         }
-        
     }
 
+    //Generate A* path
+    astar(&snake_1d, &mut snake_path, apple);
+
+    for i in 0..900 {
+        snake_path[i] = snake_path[i+1];
+    }
 
     // Create a new game and run it.
     let mut app = App {
