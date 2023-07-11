@@ -28,8 +28,167 @@ pub fn gen_apple(snake: &Vec<u16>, size: u16) -> usize {
     return 0;
 }
 
-pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>) {
-    
+pub fn astar(snake: &Vec<u16>, path: &mut Vec<u16>, apple: usize) {
+    let mut open: Vec<u16> = Vec::new();
+    let mut open_f: Vec<u16> = Vec::new();
+    let mut open_g: Vec<u16> = Vec::new();
+    let mut open_parent: Vec<u16> = Vec::new();
+    let mut closed: Vec<u16> = Vec::new();
+    let mut closed_g: Vec<u16> = Vec::new();
+    let mut closed_parent: Vec<u16> = Vec::new();
+    let mut current: usize;
+    let mut target: u16;
+
+    open.push(path[898]);
+    open_f.push(0);
+    open_g.push(0);
+    open_parent.push(999);
+
+    while open.is_empty() == false {
+        current = 0;
+        for i in 1..open_f.len() {
+            if open_f[i] < open_f[current] {
+                current = i;
+            }
+        }
+
+        closed.push(open.swap_remove(current));
+        open_f.remove(current);
+        closed_g.push(open_g.swap_remove(current));
+        closed_parent.push(open_parent.swap_remove(current));
+
+        current = closed.len()-1;
+
+        if closed[current] == apple as u16 {
+            break;
+        }
+
+        if closed[current] < 870 {
+            target = closed[current] + 30;
+            let mut set: bool = true;
+            if set && closed.contains(&target) {
+                set = false;
+            }
+            if set && snake[target as usize] > (closed_g[current] + 1) {
+                set = false;
+            }
+            if set && open.contains(&target) {
+                for i in 0..open.len() {
+                    if open[i] == target {
+                        if open_g[i] < (closed_g[current])+2 {
+                            set = false;
+                        }
+                    }
+                }
+            }
+            if set {
+                open.push(target);
+                if apple as u16 > target {
+                    open_f.push(closed_g[current]+1+(apple as u16)-target);
+                } else {
+                    open_f.push(closed_g[current]+1+target-(apple as u16));
+                }
+                open_g.push(closed_g[current] + 1);
+                open_parent.push(current as u16);
+            }
+        }
+        if closed[current] > 29 {
+            target = closed[current] - 30;
+            let mut set: bool = true;
+            if set && closed.contains(&target) {
+                set = false;
+            }
+            if set && snake[target as usize] > (closed_g[current] + 1) {
+                set = false;
+            }
+            if set && open.contains(&target) {
+                for i in 0..open.len() {
+                    if open[i] == target {
+                        if open_g[i] < (closed_g[current])+2 {
+                            set = false;
+                        }
+                    }
+                }
+            }
+            if set {
+                open.push(target);
+                if apple as u16 > target {
+                    open_f.push(closed_g[current]+1+(apple as u16)-target);
+                } else {
+                    open_f.push(closed_g[current]+1+target-(apple as u16));
+                }
+                open_g.push(closed_g[current] + 1);
+                open_parent.push(current as u16);
+            }
+        }
+        if closed[current]%30 != 29 {
+            target = closed[current] + 1;
+            let mut set: bool = true;
+            if set && closed.contains(&target) {
+                set = false;
+            }
+            if set && snake[target as usize] > (closed_g[current] + 1) {
+                set = false;
+            }
+            if set && open.contains(&target) {
+                for i in 0..open.len() {
+                    if open[i] == target {
+                        if open_g[i] < (closed_g[current])+2 {
+                            set = false;
+                        }
+                    }
+                }
+            }
+            if set {
+                open.push(target);
+                if apple as u16 > target {
+                    open_f.push(closed_g[current]+1+(apple as u16)-target);
+                } else {
+                    open_f.push(closed_g[current]+1+target-(apple as u16));
+                }
+                open_g.push(closed_g[current] + 1);
+                open_parent.push(current as u16);
+            }
+        }
+        if closed[current]%30 != 0 {
+            target = closed[current] - 1;
+            let mut set: bool = true;
+            if set && closed.contains(&target) {
+                set = false;
+            }
+            if set && snake[target as usize] > (closed_g[current] + 1) {
+                set = false;
+            }
+            if set && open.contains(&target) {
+                for i in 0..open.len() {
+                    if open[i] == target {
+                        if open_g[i] < (closed_g[current])+2 {
+                            set = false;
+                        }
+                    }
+                }
+            }
+            if set {
+                open.push(target);
+                if apple as u16 > target {
+                    open_f.push(closed_g[current]+1+(apple as u16)-target);
+                } else {
+                    open_f.push(closed_g[current]+1+target-(apple as u16));
+                }
+                open_g.push(closed_g[current] + 1);
+                open_parent.push(current as u16);
+            }
+        }
+
+        while current != 999 {
+            for i in 0..900 {
+                path[i+1] = path[i];
+            }
+            path[0] = closed[current];
+        }
+        
+
+    }
 }
 
 pub struct App {
